@@ -1,6 +1,6 @@
 
-getwd()
-setwd("/home/mandhri/Data preprocess/BLOOD dataset analysis")
+getwd("/home/ubuntu/")
+setwd("/home/")
 getwd()
 ""
 # Loading libraries
@@ -48,6 +48,16 @@ create_summary <- function(toptable = NULL,
               sep="\t")
 }
 
+#load the data 
+B <- data.table::fread("GSE55763 beta filtered.txt")
+B <- as.data.frame(B)
+dim(B)
+head(B)
+rownames(B) <- B$V1
+B <- B %>% select(-V1)
+M <- logit2(B)
+pheno <- read.delim("GSE55763 beta filtered.txt")
+glimpse(pheno)
 
 
 

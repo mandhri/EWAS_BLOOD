@@ -2,7 +2,8 @@
 getwd("/home/ubuntu/")
 setwd("/home/ubuntu")
 getwd()
-""
+
+
 # Loading libraries
 
 library(GEOquery)
@@ -49,6 +50,7 @@ create_summary <- function(toptable = NULL,
 }
 
 #load the data 
+phenotypes<-read.table("GSE55763 Phenotypes.txt")
 B <- data.table::fread("Data_preprocess")
 
 

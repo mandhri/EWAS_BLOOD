@@ -1,6 +1,6 @@
 
 getwd("/home/ubuntu/")
-setwd("/home/ubuntu/")
+setwd("/home/ubuntu")
 getwd()
 ""
 # Loading libraries
@@ -49,7 +49,9 @@ create_summary <- function(toptable = NULL,
 }
 
 #load the data 
-B <- data.table::fread("GSE55763 beta filtered.txt")
+B <- data.table::fread("Data_preprocess")
+
+
 B <- as.data.frame(B)
 dim(B)
 B[1:6]
@@ -64,7 +66,7 @@ B <- B %>% dplyr::select(-V1)
 library("minfi")
 M <- logit2(B)
 M[1:6]
-pheno <- read.delim("GSE55763 beta filtered.txt")
+pheno <- read.delim("Data_preprocess")
 glimpse(pheno)
 
 ## For the dataset GSE55763, cell type composition is not provided. Therefore champ.refbase will be used.
@@ -72,3 +74,22 @@ glimpse(pheno)
 ## Correcting cell type composition.
 
 celltypes <- champ.refbase(beta = B,arraytype = "450K")
+head(celltypes[[2]])
+head(celltypes[[1]])
+
+#Cell type[[1]] contains all the Sentrix IDs where as celltype [[2]], contains all the cell type fractions.
+celltypes_1 <- celltypes[[2]]
+class(celltypes_1)
+head(celltypes_1)
+celltypes_1 <- as.data.frame(celltypes_1)
+###
+celltypes_1$Sample_Name <- rownames(celltypes_1)
+
+#Adding sample _name to the pheno 
+pheno <- left_join(pheno, celltypes_1, by = "Sample_Name")
+
+pheno[1:3,2707]
+row.names(pheno)
+colnames(pheno)
+row.names(celltypes_1)
+colnames(celltypes_1)

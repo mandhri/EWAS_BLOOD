@@ -54,7 +54,7 @@ B[1:6]
 rownames(B) <- B$V1
 class(B$V1)
 
-#Drop the column V1 in B.
+#Drop the column V1 in B.  
 #Use dplyr:: since R mistake the select function to MASS package for dplyr
 B <- B %>% dplyr::select(-V1)
 
@@ -111,6 +111,8 @@ celltypes$Sample_Name <- rownames(celltypes)
 
 ##########################################
 
+#Making the model where males will be represented as 1 and females as 0 in pheno$sex. Since in my analysis, i am
+#correcting for cell composition. I will be using different cell types in the model.
 design=model.matrix(~age +
                       sex +
                       CD4T +
@@ -119,30 +121,49 @@ design=model.matrix(~age +
                       NK +
                       Gran,
                     pheno)
+
+##Linear models for series of Array to differential methylated cpgs/genes 
+##identifying differential methylated genes that are associated with phenotype of interest (age).
+#In here, the model is getting fitted using empirical Bayes across the differential methylated genes.
+#M values
 fit1_M <- lmFit(M,
                 design)
 fit2_M <- eBayes(fit1_M)
 
+#B values
 fit1_B <- lmFit(B,
                 design)
 fit2_B <- eBayes(fit1_B)
 
+#Observing top differentially methyalted cpgs associated with age for both B values and M values
 coef = "age"
 results <- topTable(fit2_M,
                     coef=coef,
                     number = Inf,
                     p.value = 1)
+
 results_B <- topTable(fit2_B,
                       coef=coef,
                       number=Inf,
                       p.value=1)
+
+#By default, this function lists the ten top-regulated genes, showing from left to right
+
+#Differential cpg site,
+#the log-fold change associated with the comparison we are interested in (DNAM & age)
+#the average intensity of the probe set/gene across all chips,
+#the (moderated) t-statistic for the hypothesis that the log-fold change is zero (or equivalently, that the fold change is one),
+#the associated raw and adjusted p-values for the t-statistic,
+##an estimated log-odds ratio for DE.
+
+#Substitute the log FC values of M to the log FC vales of Beta values. In here, log FC values will be normally 
+#distributed. 
+
 results$logFC <- results_B[rownames(results),"logFC"]
 SE <- fit2_B$sigma * fit2_B$stdev.unscaled
 results$SE <- SE[rownames(results),coef]
-getwd()
 
 setwd("/home/mandhri/Data_preprocess/")
-
 #Save p-value histogram
 tiff('GSE55763_pvalhist_DMPsCTC.tiff',
      width =5,
@@ -166,16 +187,16 @@ results_age=topTable(fit2_M,
                      p.value = fdr)
 #129738 DMPs 
 
-directory = "/home/mandhri/Data_preprocess/"
+directory = ("/home/mandhri/Data_preprocess/")
 create_summary(toptable = results,
                dataset_label = "GSE55763",
                directory = directory)
 
 #check to see if limma worked
 
-cpg <-rownames(results)[1]
+cpg <-rownames(results)
 pheno_with_meth <- cbind(pheno, meth= as.numeric(B[cpg,]))
-tiff('GSE55763_DMP_CTC_check.tiff',
+tiff('GSE55763_DMP_CTC_check_version_2.tiff',
      width =5,
      height = 3,
      units = 'in',
@@ -185,3 +206,4 @@ ggplot(pheno_with_meth, aes(x=age, y=meth)) +
   labs(y=paste("% methylation at",cpg))
 dev.off()
 
+dim(read.delim("GSE55763.tbl"))

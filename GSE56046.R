@@ -1,7 +1,7 @@
-
 getwd("/home/ubuntu/")
 setwd("/home/ubuntu")
 getwd()
+
 
 
 
@@ -46,9 +46,10 @@ create_summary <- function(toptable = NULL,
               sep="\t")
 }
 
+
 #load the data 
 
-B <- data.table::fread("Data_preprocess")
+B <- data.table::fread("GSE56046 beta after normalisation and batch correction.txt")
 B <- as.data.frame(B)
 dim(B)
 B[1:6]
@@ -63,40 +64,21 @@ B <- B %>% dplyr::select(-V1)
 library("minfi")
 M <- logit2(B)
 
-pheno<-read.table("GSE55763 Phenotypes.txt")
+pheno<-read.table("GSE56046 Phenotypes.txt")
 
-#keeping columns from 1:10 on pheno dataset
+#keeping columns from 1 to 7 and 9,16 on pheno dataset
 
-pheno<-pheno[c(1:10)]
+pheno<-pheno[c(1,2,3,4,5,6,7,9,16)]
 
 #Checking the content in the pheno
 glimpse(pheno)
 
 ## For the dataset GSE55763, cell type composition is not provided. Therefore champ.refbase will be used.
 ## Correcting cell type composition.
-
-celltypes <- champ.refbase(beta = B,arraytype = "450K")
-#head(celltypes[[2]])
-#head(celltypes[[1]])
-
-#Cell type[[1]] contains all the Sentrix IDs where as celltype [[2]], contains all the cell type fractions.
-celltypes <- celltypes[[2]]
-class(celltypes)
-head(celltypes)
-celltypes<- as.data.frame(celltypes)
-###
-celltypes$title <- rownames(celltypes)
-pheno$title <- as.character(pheno$title)
-pheno <- left_join(pheno, celltypes, by = "title")
-
-pheno$sex <- as.factor(pheno$sex)
-pheno$age <- as.numeric(pheno$age)
-pheno$CD4T <- as.numeric(pheno$CD4T)
-pheno$Bcell <- as.numeric(pheno$Bcell)
-pheno$NK <- as.numeric(pheno$NK)
-pheno$Gran <- as.numeric(pheno$Gran)
-pheno$Mono <- as.numeric(pheno$CD8T)
-celltypes$Sample_Name <- rownames(celltypes)
+## Note: Cell type proportion won't be corrected since cell type proportion is given in the study 
+rownames(pheno) <-pheno$Sample_Name
+glimpse(pheno)
+pheno$racegendersite.ch1 <- as.factor(pheno$racegendersite.ch1)
 
 ##EXTRA#################
 ###################################################
@@ -117,11 +99,7 @@ celltypes$Sample_Name <- rownames(celltypes)
 #correcting for cell composition. I will be using different cell types in the model.
 design=model.matrix(~age +
                       sex +
-                      CD4T +
-                      Bcell +
-                      CD8T +
-                      NK +
-                      Gran,
+                      racegendersite.ch1, 
                     pheno)
 
 ##Linear models for series of Array to differential methylated cpgs/genes 
@@ -153,7 +131,7 @@ results_B <- topTable(fit2_B,
                       number=Inf,
                       p.value=1)
 
-
+ 
 #Differential cpg site,
 #the log-fold change associated with the comparison we are interested in (DNAM change per unit age)
 #the average intensity of the probe set/gene across all chips,
@@ -171,7 +149,7 @@ results$SE <- SE[rownames(results),coef]
 setwd("/home/mandhri/Data_preprocess/")
 
 #Save p values for distribution of age DMPS with cell type composition in a histogram 
-tiff('GSE55763_pvalhist_DMPsCTC.tiff',
+tiff('GSE197674_pvalhist_DMPsCTC.tiff',
      width =5,
      height = 3,
      units = 'in',
@@ -192,7 +170,7 @@ results_age=topTable(fit2_M,
                      number = nrow(M),
                      adjust.method = "BH",
                      p.value = fdr)
-#129738 DMPs 
+#158072 DMPs 
 
 directory = ("/home/mandhri/Data_preprocess/")
 create_summary(toptable = results,
@@ -207,4 +185,3 @@ write.table(signif(resid,digits = 4),
             row.names = TRUE,
             col.names = TRUE,
             sep="\t")
-

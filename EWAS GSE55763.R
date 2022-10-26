@@ -97,6 +97,7 @@ pheno$Gran <- as.numeric(pheno$Gran)
 pheno$Mono <- as.numeric(pheno$CD8T)
 celltypes$Sample_Name <- rownames(celltypes)
 
+##EXTRA#################
 ###################################################
 #naming the 1st column as simple name
 #colnames(pheno1)[1] <- "Sample_Name"
@@ -126,9 +127,13 @@ design=model.matrix(~age +
 ##identifying differential methylated genes that are associated with phenotype of interest (age).
 #In here, the model is getting fitted using empirical Bayes across the differential methylated genes.
 #M values
+
 fit1_M <- lmFit(M,
                 design)
 fit2_M <- eBayes(fit1_M)
+
+names(fit1_M)
+names(fit2_M)
 
 #B values
 fit1_B <- lmFit(B,
@@ -147,10 +152,9 @@ results_B <- topTable(fit2_B,
                       number=Inf,
                       p.value=1)
 
-#By default, this function lists the ten top-regulated genes, showing from left to right
 
 #Differential cpg site,
-#the log-fold change associated with the comparison we are interested in (DNAM & age)
+#the log-fold change associated with the comparison we are interested in (DNAM change per unit age)
 #the average intensity of the probe set/gene across all chips,
 #the (moderated) t-statistic for the hypothesis that the log-fold change is zero (or equivalently, that the fold change is one),
 #the associated raw and adjusted p-values for the t-statistic,
@@ -164,7 +168,8 @@ SE <- fit2_B$sigma * fit2_B$stdev.unscaled
 results$SE <- SE[rownames(results),coef]
 
 setwd("/home/mandhri/Data_preprocess/")
-#Save p-value histogram
+
+#Save p values for distribution of age DMPS with cell type composition in a histogram 
 tiff('GSE55763_pvalhist_DMPsCTC.tiff',
      width =5,
      height = 3,
@@ -178,7 +183,8 @@ ggplot(results,
                  fill="lightblue",bins = 30)
 dev.off()
 
-#for interest check number of DMPs
+
+#Number of DMPs
 fdr = 0.005
 results_age=topTable(fit2_M,
                      coef = "age",
@@ -192,18 +198,12 @@ create_summary(toptable = results,
                dataset_label = "GSE55763",
                directory = directory)
 
-#check to see if limma worked
+#Save residuals
+resid <- residuals(fit2_M, M)
+write.table(signif(resid,digits = 4),
+            file="GSE55763_M_res.txt",
+            quote = FALSE,
+            row.names = TRUE,
+            col.names = TRUE,
+            sep="\t")
 
-cpg <-rownames(results)
-pheno_with_meth <- cbind(pheno, meth= as.numeric(B[cpg,]))
-tiff('GSE55763_DMP_CTC_check_version_2.tiff',
-     width =5,
-     height = 3,
-     units = 'in',
-     res = 200)
-ggplot(pheno_with_meth, aes(x=age, y=meth)) +
-  geom_jitter(width = 0.06)+
-  labs(y=paste("% methylation at",cpg))
-dev.off()
-
-dim(read.delim("GSE55763.tbl"))

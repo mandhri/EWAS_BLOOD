@@ -1,4 +1,3 @@
-
 setwd("/home/ubuntu")
 getwd()
 
@@ -49,7 +48,7 @@ create_summary <- function(toptable = NULL,
 
 #load the data 
 
-B <- data.table::fread("GSE56046 beta after normalisation and batch correction.txt")
+B <- data.table::fread("SATSA Normalized beta values after batch correction.txt")
 B <- as.data.frame(B)
 dim(B)
 B[1:6]
@@ -64,19 +63,32 @@ B <- B %>% dplyr::select(-V1)
 library("minfi")
 M <- logit2(B)
 
-pheno<-read.table("GSE56046 Phenotypes.txt")
+pheno<-read.table("SATSA Phenotypes.txt")
 names(pheno)
 #keeping columns from 1 to 7 and 9,16 on pheno dataset
 
-pheno<-pheno[c(1:15)]
+pheno<-pheno[c(1:25)]
 
 #Checking the content in the pheno
 glimpse(pheno)
 
-##
-###Note: Cell type proportion won't be corrected since cell type proportion is given in the study 
-class(pheno$racegendersite.ch1)
-pheno$racegendersite.ch1 <- as.factor(pheno$racegendersite.ch1)
+## For the dataset GSE55763, cell type composition is not provided. Therefore champ.refbase will be used.
+## Correcting cell type composition.
+
+celltypes <- champ.refbase(beta = B,arraytype = "450")
+head(celltypes[[2]])
+head(celltypes[[1]])
+
+#Cell type[[1]] contains all the Sentrix IDs where as celltype [[2]], contains all the cell type fractions.
+celltypes <- celltypes[[2]]
+class(celltypes)
+head(celltypes)
+celltypes<- as.data.frame(celltypes)
+###
+celltypes$Sample_Name <- rownames(celltypes)
+pheno <- left_join(pheno, celltypes, by = "Sample_Name")
+
+
 
 
 ##EXTRA#################
@@ -97,13 +109,22 @@ pheno$racegendersite.ch1 <- as.factor(pheno$racegendersite.ch1)
 #Making the model where males will be represented as 1 and females as 0 in pheno$sex. Since in my analysis, i am
 #correcting for cell composition. I will be using different cell types in the model.
 design=model.matrix(~age +
-                      predictsex +
+                      sex +
+                      CD4T +
                       Bcell +
+                      CD8T +
                       NK +
-                      Neutro +
-                      Tcell +
-                     racegendersite.ch1, 
+                      Gran,
                     pheno)
+
+
+#use twin pair as the duplicate correlation
+Msubset <- M[sample(nrow(M),size=5000,replace=FALSE),]
+
+corfit <- duplicateCorrelation(Msubset, #we fit limma models on M values and not beta values
+                               design,
+                               block=pheno$twin.pair) 
+corfit$consensus
 
 ##Linear models for series of Array to differential methylated cpgs/genes 
 ##identifying differential methylated genes that are associated with phenotype of interest (age).
@@ -116,7 +137,12 @@ fit2_M <- eBayes(fit1_M)
 
 names(fit1_M)
 names(fit2_M)
+#use twin pair as the duplicate correlation
+Bsubset <- B[sample(nrow(M),size=5000,replace=FALSE),]
 
+corfit_B <- duplicateCorrelation(Bsubset, #we fit limma models on M values and not beta values
+                                 design,
+                                 block=pheno$twin.pair) 
 #B values
 fit1_B <- lmFit(B,
                 design)
@@ -134,7 +160,7 @@ results_B <- topTable(fit2_B,
                       number=Inf,
                       p.value=1)
 
- 
+
 #Differential cpg site,
 #the log-fold change associated with the comparison we are interested in (DNAM change per unit age)
 #the average intensity of the probe set/gene across all chips,
@@ -152,7 +178,7 @@ results$SE <- SE[rownames(results),coef]
 setwd("/home/mandhri/Data_preprocess/")
 
 #Save p values for distribution of age DMPS with cell type composition in a histogram 
-tiff('GSE56046_pvalhist_DMPsCTC.tiff',
+tiff('STATA_pvalhist_DMPsCTC.tiff',
      width =5,
      height = 3,
      units = 'in',
@@ -166,6 +192,7 @@ ggplot(results,
 dev.off()
 
 
+
 #Number of DMPs
 fdr = 0.005
 results_age=topTable(fit2_M,
@@ -173,17 +200,17 @@ results_age=topTable(fit2_M,
                      number = nrow(M),
                      adjust.method = "BH",
                      p.value = fdr)
-#44229 DMPs 
+#12956 DMPs 
 
 directory = ("/home/mandhri/Data_preprocess/")
 create_summary(toptable = results,
-               dataset_label = "GSE56046",
+               dataset_label = "STATA",
                directory = directory)
 
 #Save residuals
 resid <- residuals(fit2_M, M)
 write.table(signif(resid,digits = 4),
-            file="GSE56046_M_res.txt",
+            file="STATA_M_res.txt",
             quote = FALSE,
             row.names = TRUE,
             col.names = TRUE,

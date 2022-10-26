@@ -65,10 +65,10 @@ library("minfi")
 M <- logit2(B)
 
 pheno<-read.table("GSE56046 Phenotypes.txt")
-
+names(pheno)
 #keeping columns from 1 to 7 and 9,16 on pheno dataset
 
-pheno<-pheno[c(1,2,3,4,5,6,7,9,16)]
+pheno<-pheno[c(1:15)]
 
 #Checking the content in the pheno
 glimpse(pheno)
@@ -76,9 +76,9 @@ glimpse(pheno)
 ## For the dataset GSE55763, cell type composition is not provided. Therefore champ.refbase will be used.
 ## Correcting cell type composition.
 ## Note: Cell type proportion won't be corrected since cell type proportion is given in the study 
-rownames(pheno) <-pheno$Sample_Name
-glimpse(pheno)
+class(pheno$racegendersite.ch1)
 pheno$racegendersite.ch1 <- as.factor(pheno$racegendersite.ch1)
+
 
 ##EXTRA#################
 ###################################################
@@ -98,8 +98,12 @@ pheno$racegendersite.ch1 <- as.factor(pheno$racegendersite.ch1)
 #Making the model where males will be represented as 1 and females as 0 in pheno$sex. Since in my analysis, i am
 #correcting for cell composition. I will be using different cell types in the model.
 design=model.matrix(~age +
-                      sex +
-                      racegendersite.ch1, 
+                      predictsex +
+                      Bcell +
+                      NK +
+                      Neutro +
+                      Tcell +
+                     racegendersite.ch1, 
                     pheno)
 
 ##Linear models for series of Array to differential methylated cpgs/genes 
@@ -149,7 +153,7 @@ results$SE <- SE[rownames(results),coef]
 setwd("/home/mandhri/Data_preprocess/")
 
 #Save p values for distribution of age DMPS with cell type composition in a histogram 
-tiff('GSE197674_pvalhist_DMPsCTC.tiff',
+tiff('GSE56046_pvalhist_DMPsCTC.tiff',
      width =5,
      height = 3,
      units = 'in',
@@ -170,17 +174,17 @@ results_age=topTable(fit2_M,
                      number = nrow(M),
                      adjust.method = "BH",
                      p.value = fdr)
-#158072 DMPs 
+#44229 DMPs 
 
 directory = ("/home/mandhri/Data_preprocess/")
 create_summary(toptable = results,
-               dataset_label = "GSE55763",
+               dataset_label = "GSE56046",
                directory = directory)
 
 #Save residuals
 resid <- residuals(fit2_M, M)
 write.table(signif(resid,digits = 4),
-            file="GSE55763_M_res.txt",
+            file="GSE56046_M_res.txt",
             quote = FALSE,
             row.names = TRUE,
             col.names = TRUE,

@@ -1,2 +1,3 @@
 # blood-dataset-analysis
-EWas,meta-analysis and metaregression on blood
+EWAS on 5 blood dataset found in GEO
+

@@ -113,6 +113,18 @@ design=model.matrix(~age +
                       sex,
                     pheno)
 
+
+
+#### design model , if cell type proportion is considered
+#design=model.matrix(~age +
+#                   CD4T +
+#                    Bcell +
+#                    CD8T +
+#                    NK +
+#                    Gran,
+#                    sex,
+#                    pheno)
+
 ##Linear models for series of Array to differential methylated cpgs/genes 
 ##identifying differential methylated genes that are associated with phenotype of interest (age).
 #In here, the model is getting fitted using empirical Bayes across the differential methylated genes.

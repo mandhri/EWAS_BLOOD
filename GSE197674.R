@@ -110,12 +110,7 @@ class(pheno$Sentrix_ID)
 #Making the model where males will be represented as 1 and females as 0 in pheno$sex. Since in my analysis, i am
 #correcting for cell composition. I will be using different cell types in the model.
 design=model.matrix(~age +
-                      sex +
-                      CD4T +
-                      Bcell +
-                      CD8T +
-                      NK +
-                      Gran,
+                      sex,
                     pheno)
 
 ##Linear models for series of Array to differential methylated cpgs/genes 
@@ -135,7 +130,7 @@ fit1_B <- lmFit(B,
                 design)
 fit2_B <- eBayes(fit1_B)
 
-#Observing top differentially methyalted cpgs associated with age for both B values and M values
+#Observing top differentially methylated cpgs associated with age for both B values and M values
 coef = "age"
 results <- topTable(fit2_M,
                     coef=coef,
@@ -163,7 +158,7 @@ results$logFC <- results_B[rownames(results),"logFC"]
 SE <- fit2_B$sigma * fit2_B$stdev.unscaled
 results$SE <- SE[rownames(results),coef]
 
-setwd("/home/mandhri/Data_preprocess/")
+setwd("/home/mandhri/ewas")
 
 #Save p values for distribution of age DMPS with cell type composition in a histogram 
 tiff('GSE197674_pvalhist_DMPsCTC.tiff',
@@ -187,19 +182,10 @@ results_age=topTable(fit2_M,
                      number = nrow(M),
                      adjust.method = "BH",
                      p.value = fdr)
-#158072 DMPs 
+#156842 DMPs 
 
-directory = ("/home/mandhri/Data_preprocess/")
+directory = ("/home/mandhri/ewas")
 create_summary(toptable = results,
-               dataset_label = "GSE55763",
+               dataset_label = "GSE197674",
                directory = directory)
-
-#Save residuals
-resid <- residuals(fit2_M, M)
-write.table(signif(resid,digits = 4),
-            file="GSE55763_M_res.txt",
-            quote = FALSE,
-            row.names = TRUE,
-            col.names = TRUE,
-            sep="\t")
 

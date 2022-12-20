@@ -1,5 +1,5 @@
 
-setwd("/home/ubuntu")
+setwd("/home/mandhri/ewas")
 getwd()
 
 
@@ -96,14 +96,30 @@ pheno$racegendersite.ch1 <- as.factor(pheno$racegendersite.ch1)
 
 #Making the model where males will be represented as 1 and females as 0 in pheno$sex. Since in my analysis, i am
 #correcting for cell composition. I will be using different cell types in the model.
+
+
+##In this model, it should be noted that the RAW DATA contains no information as to how 
+#they categorised racegendersite.ch1. It was mentioned that sex is included in this variable.
+#Therefore, I did not included predicted sex in the model since i could not find any info regarding race of the participants.
 design=model.matrix(~age +
-                      predictsex +
-                      Bcell +
-                      NK +
-                      Neutro +
-                      Tcell +
                      racegendersite.ch1, 
                     pheno)
+
+
+
+
+#### design model, if cell type proportion is considered.
+
+#design=model.matrix(~age +
+#                   CD4T +
+#                    Bcell +
+#                    CD8T +
+#                    NK +
+#                    Gran,
+#                    racegendersite.ch1,
+#                    pheno)
+
+
 
 ##Linear models for series of Array to differential methylated cpgs/genes 
 ##identifying differential methylated genes that are associated with phenotype of interest (age).

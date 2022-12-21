@@ -46,9 +46,10 @@ create_summary <- function(toptable = NULL,
               sep="\t")
 }
 
+list.files(getwd())
 #load the data 
 
-B <- data.table::fread("Data_preprocess")
+B <- data.table::fread("GSE55763 beta filtered.txt")
 B <- as.data.frame(B)
 dim(B)
 B[1:6]
@@ -116,13 +117,20 @@ celltypes$Sample_Name <- rownames(celltypes)
 #Making the model where males will be represented as 1 and females as 0 in pheno$sex. Since in my analysis, i am
 #correcting for cell composition. I will be using different cell types in the model.
 design=model.matrix(~age +
-                      sex +
-                      CD4T +
-                      Bcell +
-                      CD8T +
-                      NK +
-                      Gran,
+                      sex ,
                     pheno)
+
+
+
+#### design model , if cell type proportion is considered
+#design=model.matrix(~age +
+#                   CD4T +
+#                    Bcell +
+#                    CD8T +
+#                    NK +
+#                    Gran,
+#                    sex,
+#                    pheno)
 
 ##Linear models for series of Array to differential methylated cpgs/genes 
 ##identifying differential methylated genes that are associated with phenotype of interest (age).
@@ -168,7 +176,7 @@ results$logFC <- results_B[rownames(results),"logFC"]
 SE <- fit2_B$sigma * fit2_B$stdev.unscaled
 results$SE <- SE[rownames(results),coef]
 
-setwd("/home/mandhri/Data_preprocess/")
+setwd("/home/mandhri/ewas")
 
 #Save p values for distribution of age DMPS with cell type composition in a histogram 
 tiff('GSE55763_pvalhist_DMPsCTC.tiff',
@@ -194,17 +202,9 @@ results_age=topTable(fit2_M,
                      p.value = fdr)
 #129738 DMPs 
 
-directory = ("/home/mandhri/Data_preprocess/")
+directory = ("/home/mandhri/ewas")
 create_summary(toptable = results,
                dataset_label = "GSE55763",
                directory = directory)
 
-#Save residuals
-resid <- residuals(fit2_M, M)
-write.table(signif(resid,digits = 4),
-            file="GSE55763_M_res.txt",
-            quote = FALSE,
-            row.names = TRUE,
-            col.names = TRUE,
-            sep="\t")
 

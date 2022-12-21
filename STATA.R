@@ -109,13 +109,17 @@ pheno <- left_join(pheno, celltypes, by = "Sample_Name")
 #Making the model where males will be represented as 1 and females as 0 in pheno$sex. Since in my analysis, i am
 #correcting for cell composition. I will be using different cell types in the model.
 design=model.matrix(~age +
-                      sex +
-                      CD4T +
-                      Bcell +
-                      CD8T +
-                      NK +
-                      Gran,
+                      sex ,
                     pheno)
+#### design model , if cell type proportion is considered
+#design=model.matrix(~age +
+#                   CD4T +
+#                    Bcell +
+#                    CD8T +
+#                    NK +
+#                    Gran,
+#                    sex,
+#                    pheno)
 
 
 #use twin pair as the duplicate correlation
@@ -175,7 +179,7 @@ results$logFC <- results_B[rownames(results),"logFC"]
 SE <- fit2_B$sigma * fit2_B$stdev.unscaled
 results$SE <- SE[rownames(results),coef]
 
-setwd("/home/mandhri/Data_preprocess/")
+setwd("/home/mandhri/ewas")
 
 #Save p values for distribution of age DMPS with cell type composition in a histogram 
 tiff('STATA_pvalhist_DMPsCTC.tiff',
@@ -202,16 +206,7 @@ results_age=topTable(fit2_M,
                      p.value = fdr)
 #12956 DMPs 
 
-directory = ("/home/mandhri/Data_preprocess/")
+directory = ("/home/mandhri/ewas")
 create_summary(toptable = results,
                dataset_label = "STATA",
                directory = directory)
-
-#Save residuals
-resid <- residuals(fit2_M, M)
-write.table(signif(resid,digits = 4),
-            file="STATA_M_res.txt",
-            quote = FALSE,
-            row.names = TRUE,
-            col.names = TRUE,
-            sep="\t")

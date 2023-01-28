@@ -1,12 +1,7 @@
-getwd("/home/ubuntu/")
-setwd("/home/ubuntu")
+setwd("~/meta-anlysis A/blood-dataset-analysis")
 getwd()
 
-
-
-
-
- # Loading libraries
+# Loading libraries
 
 library(GEOquery)
 library(ChAMP)
@@ -52,10 +47,9 @@ create_summary <- function(toptable = NULL,
 
 B <- data.table::fread("GSE197674 beta after filtering and batch correction.txt")
 B <- as.data.frame(B)
-dim(B)
-B[1:6]
+
 rownames(B) <- B$V1
-class(B$V1)
+
 
 #Drop the column V1 in B.  
 #Use dplyr:: since R mistake the select function to MASS package for dplyr
@@ -69,7 +63,7 @@ pheno<-read.table("GSE197674 Phenotypes.txt")
 
 #keeping columns from 1 to 7 and 9,16 on pheno dataset
 
-pheno<-pheno[c(1,2,3,4,5,6,7,9,16)]
+pheno<-pheno[c(-26,-25,-24,-23,-22,-21,-20,-19)]
 
 #Checking the content in the pheno
 glimpse(pheno)
@@ -77,20 +71,22 @@ glimpse(pheno)
 ## For the dataset GSE55763, cell type composition is not provided. Therefore champ.refbase will be used.
 ## Correcting cell type composition.
 
-celltypes <- champ.refbase(beta = B,arraytype = "EPIC")
-head(celltypes[[2]])
-head(celltypes[[1]])
+#Update : Cell type proportion wont be corrected
+
+#celltypes <- champ.refbase(beta = B,arraytype = "EPIC")
+#head(celltypes[[2]])
+#head(celltypes[[1]])
 
 #Cell type[[1]] contains all the Sentrix IDs where as celltype [[2]], contains all the cell type fractions.
-celltypes <- celltypes[[2]]
-class(celltypes)
-head(celltypes)
-celltypes<- as.data.frame(celltypes)
+#celltypes <- celltypes[[2]]
+#class(celltypes)
+#head(celltypes)
+#celltypes<- as.data.frame(celltypes)
 ###
-celltypes$Sample_Name <- rownames(celltypes)
-pheno <- left_join(pheno, celltypes, by = "Sample_Name")
+#celltypes$Sample_Name <- rownames(celltypes)
+#pheno <- left_join(pheno, celltypes, by = "Sample_Name")
 
-class(pheno$Sentrix_ID)
+#class(pheno$Sentrix_ID)
 
 ##EXTRA#################
 ###################################################
@@ -110,8 +106,19 @@ class(pheno$Sentrix_ID)
 #Making the model where males will be represented as 1 and females as 0 in pheno$sex. Since in my analysis, i am
 #correcting for cell composition. I will be using different cell types in the model.
 design=model.matrix(~age +
-                      sex,
+                      sex +
+                      abdominal_pelvic_rt.ch1 +
+                      alkylating.agent.classic.ch1+
+                      anthracyclines.ch1 +
+                      corticosteroids.ch1 +
+                      epipodophyllotoxins.ch1 +
+                      platinum.ch1 +
+                      vincristine.ch1 +
+                      chestrt.ch1 +
+                      brainrt.ch1,
                     pheno)
+
+
 
 
 
@@ -134,8 +141,6 @@ fit1_M <- lmFit(M,
                 design)
 fit2_M <- eBayes(fit1_M)
 
-names(fit1_M)
-names(fit2_M)
 
 #B values
 fit1_B <- lmFit(B,
@@ -170,7 +175,6 @@ results$logFC <- results_B[rownames(results),"logFC"]
 SE <- fit2_B$sigma * fit2_B$stdev.unscaled
 results$SE <- SE[rownames(results),coef]
 
-setwd("/home/mandhri/ewas")
 
 #Save p values for distribution of age DMPS with cell type composition in a histogram 
 tiff('GSE197674_pvalhist_DMPsCTC.tiff',
@@ -194,10 +198,12 @@ results_age=topTable(fit2_M,
                      number = nrow(M),
                      adjust.method = "BH",
                      p.value = fdr)
-#156842 DMPs 
+
+dim(results_age)
+#377964 DMPs 
 
 directory = ("/home/mandhri/ewas")
 create_summary(toptable = results,
-               dataset_label = "GSE197674",
+               dataset_label = "GSE197674_2",
                directory = directory)
 

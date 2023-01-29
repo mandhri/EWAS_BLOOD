@@ -1,7 +1,6 @@
-
 setwd("/home/mandhri/ewas")
-getwd()
 
+getwd()
 
 
 
@@ -46,10 +45,10 @@ create_summary <- function(toptable = NULL,
               sep="\t")
 }
 
-
+list.files(getwd())
 #load the data 
 
-B <- data.table::fread("GSE56046 beta after normalisation and batch correction.txt")
+B <- data.table::fread("GSE55763 beta filtered.txt")
 B <- as.data.frame(B)
 dim(B)
 B[1:6]
@@ -64,20 +63,40 @@ B <- B %>% dplyr::select(-V1)
 library("minfi")
 M <- logit2(B)
 
-pheno<-read.table("GSE56046 Phenotypes.txt")
-names(pheno)
-#keeping columns from 1 to 7 and 9,16 on pheno dataset
+pheno<-read.table("GSE55763 Phenotypes.txt")
 
-pheno<-pheno[c(1:15)]
+#keeping columns from 1:10 on pheno dataset
+
+pheno<-pheno[c(1:10)]
 
 #Checking the content in the pheno
 glimpse(pheno)
 
-##
-###Note: Cell type proportion won't be corrected since cell type proportion is given in the study 
-class(pheno$racegendersite.ch1)
-pheno$racegendersite.ch1 <- as.factor(pheno$racegendersite.ch1)
+## For the dataset GSE55763, cell type composition is not provided. Therefore champ.refbase will be used.
+## Correcting cell type composition.
 
+#celltypes <- champ.refbase(beta = B,arraytype = "450K")
+#head(celltypes[[2]])
+#head(celltypes[[1]])
+
+#Cell type[[1]] contains all the Sentrix IDs where as celltype [[2]], contains all the cell type fractions.
+#celltypes <- celltypes[[2]]
+#class(celltypes)
+#head(celltypes)
+#celltypes<- as.data.frame(celltypes)
+###
+#celltypes$title <- rownames(celltypes)
+#pheno$title <- as.character(pheno$title)
+#pheno <- left_join(pheno, celltypes, by = "title")
+
+pheno$sex <- as.factor(pheno$sex)
+pheno$age <- as.numeric(pheno$age)
+#pheno$CD4T <- as.numeric(pheno$CD4T)
+#pheno$Bcell <- as.numeric(pheno$Bcell)
+#pheno$NK <- as.numeric(pheno$NK)
+#pheno$Gran <- as.numeric(pheno$Gran)
+#pheno$Mono <- as.numeric(pheno$CD8T)
+#celltypes$Sample_Name <- rownames(celltypes)
 
 ##EXTRA#################
 ###################################################
@@ -96,30 +115,21 @@ pheno$racegendersite.ch1 <- as.factor(pheno$racegendersite.ch1)
 
 #Making the model where males will be represented as 1 and females as 0 in pheno$sex. Since in my analysis, i am
 #correcting for cell composition. I will be using different cell types in the model.
-
-
-##In this model, it should be noted that the RAW DATA contains no information as to how 
-#they categorised racegendersite.ch1. It was mentioned that sex is included in this variable.
-#Therefore, I did not included predicted sex in the model since i could not find any info regarding race of the participants.
 design=model.matrix(~age +
-                     racegendersite.ch1, 
+                      sex ,
                     pheno)
 
 
 
-
-#### design model, if cell type proportion is considered.
-
+#### design model , if cell type proportion is considered
 #design=model.matrix(~age +
 #                   CD4T +
 #                    Bcell +
 #                    CD8T +
 #                    NK +
 #                    Gran,
-#                    racegendersite.ch1,
+#                    sex,
 #                    pheno)
-
-
 
 ##Linear models for series of Array to differential methylated cpgs/genes 
 ##identifying differential methylated genes that are associated with phenotype of interest (age).
@@ -130,8 +140,7 @@ fit1_M <- lmFit(M,
                 design)
 fit2_M <- eBayes(fit1_M)
 
-names(fit1_M)
-names(fit2_M)
+
 
 #B values
 fit1_B <- lmFit(B,
@@ -150,7 +159,7 @@ results_B <- topTable(fit2_B,
                       number=Inf,
                       p.value=1)
 
- 
+
 #Differential cpg site,
 #the log-fold change associated with the comparison we are interested in (DNAM change per unit age)
 #the average intensity of the probe set/gene across all chips,
@@ -165,10 +174,9 @@ results$logFC <- results_B[rownames(results),"logFC"]
 SE <- fit2_B$sigma * fit2_B$stdev.unscaled
 results$SE <- SE[rownames(results),coef]
 
-setwd("/home/mandhri/ewas")
 
 #Save p values for distribution of age DMPS with cell type composition in a histogram 
-tiff('GSE56046_pvalhist_DMPsCTC.tiff',
+tiff('GSE55763_pvalhist_DMPsCTC.tiff',
      width =5,
      height = 3,
      units = 'in',
@@ -189,10 +197,11 @@ results_age=topTable(fit2_M,
                      number = nrow(M),
                      adjust.method = "BH",
                      p.value = fdr)
-#48,064 DMPs 
+#135646 DMPs 
 
 directory = ("/home/mandhri/ewas")
 create_summary(toptable = results,
-               dataset_label = "GSE56046_2",
+               dataset_label = "GSE55763_2",
                directory = directory)
+
 
